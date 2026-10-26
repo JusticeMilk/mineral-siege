@@ -192,7 +192,7 @@ details ul{margin:8px 0 0;padding-left:18px;color:var(--muted);line-height:1.5}
 
 <div class="overlay" id="menu">
   <div class="card panel">
-    <div class="kicker">Frontier outpost</div>
+    <div class="kicker">Frontier outpost · <span id="verTag">Version 15</span></div>
     <h1>Mineral <span>Siege</span></h1>
     <p class="sub">Your hub sits in a canyon pocket with one way in. Wall it shut, build up your economy, and hold out against the swarm night after night. Your level and upgrades carry into every new run.</p>
     <div class="stats">
@@ -297,7 +297,7 @@ details ul{margin:8px 0 0;padding-left:18px;color:var(--muted);line-height:1.5}
   <div class="card panel"><h2>Share your run</h2><img id="shareImg" alt="Run summary card" style="width:100%;border-radius:4px;display:block"><p class="sub">Press and hold the image to save it or send it.</p><button class="btn primary" id="shareNative" hidden>Share</button><button class="btn" data-back>Back</button></div>
 </div>
 <div class="overlay" id="para" hidden>
-  <div class="card panel"><div class="head"><h2>Paragon board</h2><div class="pts"><span id="paraPts">0</span> pts</div></div><p class="sub">Endless upgrades for spare points. Paragon levels are permanent and survive prestige.</p><div id="paraList"></div><button class="btn" data-back>Back</button></div>
+  <div class="card panel"><div class="head"><h2>Paragon board</h2><div class="pts"><span id="paraPts">0</span> pts</div></div><p class="sub">Endless upgrades for spare points. Paragon levels reset when you prestige.</p><div id="paraList"></div><button class="btn" data-back>Back</button></div>
 </div>
 <div class="overlay" id="sett" hidden>
   <div class="card panel"><h2>Settings</h2>
@@ -1599,10 +1599,10 @@ function renderShop(){
   list.append(row);
  }
  const pr=$('prest'),can=meta.level>=20&&!runActive();
- pr.innerHTML=`<div class="stars">★ ${meta.prestige} Prestige</div><p class="sub">Reset your level and upgrades to earn a star. Each star gives +20% ore and XP on every run, plus 2 bonus upgrade points.</p><button class="btn" id="prBtn" ${can?'':'disabled'}>${meta.level<20?`Unlocks at level 20 (you're ${meta.level})`:runActive()?'Finish your run to prestige':'Prestige now'}</button>`;
+ pr.innerHTML=`<div class="stars">★ ${meta.prestige} Prestige</div><p class="sub">Reset your level, upgrades and Paragon board to earn a star. Each star gives +20% ore and XP on every run, plus 2 bonus upgrade points.</p><button class="btn" id="prBtn" ${can?'':'disabled'}>${meta.level<20?`Unlocks at level 20 (you're ${meta.level})`:runActive()?'Finish your run to prestige':'Prestige now'}</button>`;
  const btn=$('prBtn');let armed=false;
  btn.onclick=()=>{if(!can)return;if(!armed){armed=true;btn.textContent='Tap again to confirm';btn.classList.add('warn');setTimeout(()=>{armed=false;if(btn.isConnected){btn.textContent='Prestige now';btn.classList.remove('warn')}},3000);return}
-  meta.prestige++;meta.level=1;meta.xp=0;meta.up={};meta.points=2*meta.prestige;save();ST=S();toast(`Prestige ${meta.prestige} reached`,PAL.gold);renderShop();checkAch()};
+  meta.prestige++;meta.level=1;meta.xp=0;meta.up={};meta.para={};meta.points=2*meta.prestige;save();ST=S();toast(`Prestige ${meta.prestige} reached`,PAL.gold);renderShop();checkAch()};
 }
 function pause(){if(!runActive())return;paused=true;saveRun();show('menu')}
 function resume(){if(!runActive())return;paused=false;hideAll();$('abil').hidden=false;setTool(G.tool);last=performance.now()}

@@ -104,6 +104,10 @@ details ul{margin:8px 0 0;padding-left:18px;color:var(--muted);line-height:1.5}
 .wprev{position:absolute;left:6px;top:6px;max-width:calc(100% - 66px);padding:6px 9px;z-index:2;font:600 11px/1.4 var(--display);letter-spacing:.05em;text-transform:uppercase;color:var(--fg);pointer-events:none}
 .wprev .mut{color:#ff9a6b}
 .duo .btn{padding-inline:6px}
+.ttl{font:600 14px var(--display);color:var(--gold);letter-spacing:.06em;margin-top:-6px}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cgrid .dbtn{padding:10px 12px;font-size:13px}
+.cgrid .dbtn:disabled{opacity:.5;cursor:default}
 .vol{display:grid;grid-template-columns:104px 1fr 38px;align-items:center;gap:10px;font-size:13px}
 .vol input{width:100%;accent-color:var(--console)}.vol b{font:600 12px var(--display);text-align:right;font-variant-numeric:tabular-nums}
 .tog{font:700 12px var(--display);min-width:56px;padding:7px 8px;border-radius:3px;border:1px solid var(--console);background:#0f1d14;color:var(--console);cursor:pointer;letter-spacing:.05em;text-transform:uppercase}
@@ -192,8 +196,9 @@ details ul{margin:8px 0 0;padding-left:18px;color:var(--muted);line-height:1.5}
 
 <div class="overlay" id="menu">
   <div class="card panel">
-    <div class="kicker">Frontier outpost · <span id="verTag">Version 15</span></div>
+    <div class="kicker">Frontier outpost · <span id="verTag">Version 16</span></div>
     <h1>Mineral <span>Siege</span></h1>
+    <div class="ttl" id="titleTag" hidden></div>
     <p class="sub">Your hub sits in a canyon pocket with one way in. Wall it shut, build up your economy, and hold out against the swarm night after night. Your level and upgrades carry into every new run.</p>
     <div class="stats">
       <div class="stat"><div class="k">Level</div><div class="v" id="mLv">1</div></div>
@@ -209,7 +214,7 @@ details ul{margin:8px 0 0;padding-left:18px;color:var(--muted);line-height:1.5}
       <button class="btn" id="statsBtn" hidden>Run stats</button>
       <div class="duo"><button class="btn" id="boardBtn">Best runs</button><button class="btn" id="achBtn">Achievements</button></div>
       <div class="duo"><button class="btn" id="bestBtn">Bestiary</button><button class="btn" id="bldBtn">Buildings</button></div>
-      <div class="duo"><button class="btn" id="skinsBtn">Worker skins</button><button class="btn" id="setBtn">Settings</button></div>
+      <div class="duo"><button class="btn" id="skinsBtn">Cosmetics</button><button class="btn" id="setBtn">Settings</button></div>
       <div class="duo"><button class="btn" id="soundBtn">Sound: On</button><button class="btn" id="musicBtn">Music: On</button></div>
       <button class="btn warn" id="quitBtn" hidden>End this run</button>
     </div>
@@ -313,7 +318,7 @@ details ul{margin:8px 0 0;padding-left:18px;color:var(--muted);line-height:1.5}
   <div class="card panel"><h2>Best runs</h2><p class="sub">Your top 10 runs, ranked by nights survived.</p><div id="boardBody"></div><button class="btn" data-back>Back</button></div>
 </div>
 <div class="overlay" id="skins" hidden>
-  <div class="card panel"><h2>Worker skins</h2><p class="sub">Earn prestige stars to unlock new looks. Your skin also tints your hub's glow.</p><div class="skins" id="skinsBody"></div><button class="btn" data-back>Back</button></div>
+  <div class="card panel"><h2>Cosmetics</h2><p class="sub">Unlock looks with prestige stars and achievements. Your worker skin also tints your hub's glow.</p><div class="sect"><div class="k">Worker skin</div><div class="skins" id="skinsBody"></div></div><div id="cosBody" class="stack" style="gap:16px"></div><button class="btn" data-back>Back</button></div>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -405,7 +410,7 @@ const TIERS=[
  {plate:'#8c2f3a',plate2:'#6e222c',trim:'#f2c14e',glow:'#ff9a6b',dark:'#3a0f15'},
  {plate:'#ffffff',plate2:'#e3ecf7',trim:'#f2c14e',glow:'hsl',dark:'#7a8aa0'},
  {plate:'#2b1d40',plate2:'#1d1430',trim:'#c58cff',glow:'#e2b8ff',dark:'#0d0816'}];
-function tp(l){const t=TIERS[l>=35?7:Math.min(6,Math.floor(l/5))];return t.glow!=='hsl'?t:Object.assign({},t,{glow:`hsl(${(performance.now()/15)%360},90%,70%)`})}
+function tp(l){let t=TIERS[l>=35?7:Math.min(6,Math.floor(l/5))];if(t.glow==='hsl')t=Object.assign({},t,{glow:`hsl(${(performance.now()/15)%360},90%,70%)`});const th=typeof THEMES!=='undefined'&&THEMES[meta.theme];if(th&&th.plate)t=Object.assign({},t,{plate:th.plate,plate2:th.plate2,dark:th.dark});return t}
 const RES=[
  {id:'dmg',name:'Ballistic Focus',max:10,base:100,g:1.6,fx:l=>`+${15*l}% turret and trap damage`},
  {id:'rate',name:'Rapid Cycling',max:10,base:120,g:1.6,fx:l=>`+${8*l}% fire rate`},
@@ -417,6 +422,12 @@ const AB_CD={strike:45,shield:60,surge:90},HIRE=250;
 const CMDS={eng:{name:'Engineer',desc:'Upgrades and hub upgrades cost 15% less.'},warden:{name:'Warden',desc:'All buildings and the hub get +30% HP.'},pros:{name:'Prospector',desc:'+25% ore from every source.'},tact:{name:'Tactician',ach:'bosses',desc:'Abilities recharge 30% faster. Orbital Strike hits 50% harder.'},art:{name:'Artillerist',ach:'n25',desc:'Turrets deal 15% more damage and reach 0.5 tiles farther.'},over:{name:'Overseer',ach:'drone',desc:'Start with a free drone and 200 extra ore. Drones mine 25% faster.'}};
 const MUTS={elite:{name:'Elite Night',desc:'every bug is an elite'},bonus:{name:'Bonus Boss',desc:'an extra boss joins the swarm'},swarm:{name:'Swarm',desc:'50% more bugs, each a bit weaker'},frenzy:{name:'Frenzy',desc:'bugs move 40% faster'},gold:{name:'Gold Rush',desc:'kills pay 3x ore, bugs 25% tougher'}},MKEYS=Object.keys(MUTS);
 const PERKS=[{id:'heavy',name:'Heavy Rounds',desc:'+12% turret damage'},{id:'overclock',name:'Overclock',desc:'+10% turret fire rate'},{id:'longshot',name:'Long Shot',desc:'+0.4 turret range'},{id:'plating',name:'Hardened Plating',desc:'+15% building and hub HP'},{id:'nano',name:'Nano Repair',desc:'Buildings regenerate 0.5% HP per second'},{id:'thorns',name:'Thorned Walls',desc:'Bugs take 20% of the damage they deal to your buildings'},{id:'greed',name:'Greed',desc:'+20% ore from every source'},{id:'crate',name:'Bounty Crates',desc:'Every 10th kill drops a crate of bonus ore'},{id:'scholar',name:'Scholar',desc:'+25% XP'},{id:'luck',name:'Fortune',desc:'+5% lucky chance, jackpots pay double'},{id:'quick',name:'Quick Hands',desc:'Abilities recharge 20% faster'},{id:'drone',name:'Drone Tuning',desc:'Drones mine 50% faster'}];
+const BKEYS=['c','b','sb','md','a','r','v','h','m','s','k','X'];
+const THEMES={none:{name:'Classic'},obsidian:{name:'Obsidian',need:2,plate:'#3a3644',plate2:'#2a2733',dark:'#121117'},coral:{name:'Coral',need:4,plate:'#f2c2b2',plate2:'#d9998a',dark:'#7a3b2e'},frost:{name:'Frost',ach:'untouch',plate:'#eef7ff',plate2:'#c4dcef',dark:'#5a7a92'},royal:{name:'Royal',ach:'sov',plate:'#4a3a85',plate2:'#35296a',dark:'#160f30'}};
+const HUBS={temple:{name:'Temple'},citadel:{name:'Citadel',need:1},nexus:{name:'Nexus',ach:'hub40'}};
+const KFX={splat:{name:'Bug splat'},sparks:{name:'Sparks',need:2},shards:{name:'Crystal shards',ach:'complete'},coins:{name:'Gold coins',ach:'rich'},ash:{name:'Ash',ach:'siegelord'}};
+function cosUn(o){return o.ach?!!(meta.ach&&meta.ach[o.ach]):o.need?meta.prestige>=o.need:true}
+function cosLock(o){return o.ach?'Achievement: '+((ACH.find(a=>a.id===o.ach)||{}).name||''):'Unlocks at ★'+o.need}
 const BEST={sb:'From night 25 (15 on Nightmare and up). Projects a bubble that soaks up damage for bugs around it. The bubble recharges if left alone. Railguns shoot straight through it.',md:'From night 30 (20 on Nightmare and up). Heals every bug near it. Kill it first.',r:'From night 50. Tunnels under a single wall tile and pops out inside. Can\'t be hit while underground. Build walls two thick to stop it.',a:'From night 45. Stops up to 3.5 tiles away and spits acid at buildings. Fragile, so long-range turrets handle it.',X:'Final boss, night 100 and every 100 nights after. Phase 1: armored shell, takes half damage. Phase 2: spawns broods as it walks. Phase 3: enraged, faster, and sends shockwaves through nearby buildings.',c:'Fast, fragile swarmers that come in huge numbers.',b:'Armored biters from night 2 that hit walls hard.',v:'Flyer from night 40 (25 on Nightmare). Skips walls and dives your hub. Guns, Lasers, Tesla Coils, Flak Cannons and the hub cannon can hit it.',h:'Boss. A tank with tusks that shred walls.',m:'Boss. Spawns two crawlers every few seconds as she walks.',s:'Boss. Takes 60% less damage from Guns, Flamers and traps. Bring Cannons, Lasers and Tesla.',k:'Boss. Fast, and regenerates 2% HP per second. Burst it down.'};
 const ELD={armored:'Takes half damage.',swift:'Moves 60% faster.',volatile:'Explodes on death and damages nearby buildings.',regen:'Regenerates 4% HP per second.',giant:'Over twice the HP, bigger, and hits harder.'};
 const DIFFS={easy:{name:'Easy',hp:.7,cnt:.8,dmg:.7,xp:.75,desc:'Weaker, smaller swarms. 75% XP.'},normal:{name:'Normal',hp:1,cnt:1,dmg:1,xp:1,desc:'The standard experience.'},hard:{name:'Hard',hp:1.4,cnt:1.2,dmg:1.3,xp:1.5,desc:'Tougher, bigger swarms. 150% XP.'},nightmare:{name:'Nightmare',hp:2,cnt:1.5,dmg:1.6,xp:2.5,desc:'Brutal. Elites from night 1, flyers from night 25. 250% XP.'}};
@@ -450,7 +461,22 @@ const ACH=[
  {id:'torment1',name:'Into Torment',desc:'Survive night 20 on any Torment tier',pts:3,ok:()=>surv()>=20&&G.diff==='torment'},
  {id:'torment5',name:'Tormentor',desc:'Unlock Torment V',pts:5,ok:()=>(meta.tormentMax||0)>=5},
  {id:'guard',name:'Honor Guard',desc:'Have 10 guardians on the field at once',pts:2,ok:()=>!!G&&(G.units||[]).length>=10},
- {id:'para100',name:'Paragon',desc:'Reach 100 total Paragon levels',pts:3,ok:()=>Object.values(meta.para||{}).reduce((a,b)=>a+b,0)>=100}];
+ {id:'untouch',name:'Untouchable',desc:'Reach night 50 without a single wall breach',pts:8,skin:'glacier',ok:()=>!!G&&!!G.trk&&surv()>=50&&G.st.breaches===0},
+ {id:'glass',name:'Glass Cannon',desc:'Reach night 40 with only one turret type built all run',pts:6,ok:()=>!!G&&!!G.trk&&surv()>=40&&G.trk.tT.length===1},
+ {id:'bare',name:'Bare Bones',desc:'Reach night 25 without upgrading any building or the hub',pts:6,ok:()=>!!G&&!!G.trk&&surv()>=25&&!G.trk.upg},
+ {id:'minimal',name:'Minimalist',desc:'Reach night 30 with 15 or fewer buildings',pts:6,ok:()=>!!G&&!!G.trk&&surv()>=30&&G.grid.filter(c=>isB(c.t)).length<=15},
+ {id:'notricks',name:'No Tricks',desc:'Reach night 50 without using an ability',pts:6,ok:()=>!!G&&!!G.trk&&surv()>=50&&!G.trk.ab},
+ {id:'unbroken',name:'Unbroken',desc:'Reach night 50 without your hub ever dropping below 50% HP',pts:8,ok:()=>!!G&&!!G.trk&&surv()>=50&&G.trk.hubLow>=.5},
+ {id:'ironw',name:'Iron Worker',desc:'Reach night 40 without your worker going down',pts:6,skin:'wraith',ok:()=>!!G&&!!G.trk&&surv()>=40&&G.trk.wd===0},
+ {id:'siegelord',name:'Siege Lord',desc:'Survive 5 siege nights in one run with no breaches',pts:8,ok:()=>!!G&&!!G.trk&&G.trk.cs>=5},
+ {id:'regicide',name:'Regicide',desc:'Kill the Hive Sovereign within 60 seconds of it appearing',pts:10,skin:'abyss',ok:()=>!!meta.regicide},
+ {id:'sovt3',name:'Sovereign of Torment',desc:'Defeat the Hive Sovereign on Torment III or higher',pts:10,ok:()=>!!meta.sovT3},
+ {id:'endure',name:'Endurance',desc:'Reach night 200',pts:10,skin:'solar',ok:()=>surv()>=200},
+ {id:'tormentx',name:'Torment X',desc:'Unlock Torment X',pts:15,skin:'inferno',ok:()=>(meta.tormentMax||0)>=10},
+ {id:'allcmd',name:'Every Commander',desc:'Reach night 50 with each of the six commanders',pts:10,skin:'circuit',ok:()=>Object.keys(CMDS).every(k=>meta.cmd50&&meta.cmd50[k])},
+ {id:'complete',name:'Completionist',desc:'Fill in every Bestiary entry, including all five elite types',pts:6,ok:()=>BKEYS.every(k=>meta.seen&&meta.seen[k])&&ELS.every(k=>meta.seenEl&&meta.seenEl[k])},
+ {id:'para100',name:'Paragon',desc:'Reach 100 total Paragon levels',pts:3,ok:()=>Object.values(meta.para||{}).reduce((a,b)=>a+b,0)>=100},
+ {id:'grand',name:'Grandmaster',desc:'Earn every other achievement',pts:25,skin:'chrome',ok:()=>ACH.every(a=>a.id==='grand'||(meta.ach&&meta.ach[a.id]))}];
 const PARA=[
  {id:'dmg',name:'Firepower',fx:l=>`+${2*l}% damage from every source`},
  {id:'rate',name:'Trigger Discipline',fx:l=>`+${l}% turret fire rate`},
@@ -477,6 +503,13 @@ const SKINS=[
  {id:'ascendant',name:'Ascendant',ach:'n75',body:'#fffaf0',arm:'#f2c14e',visor:'#fff6c9',trim:'#f2c14e',glow:'#fff1b0'},
  {id:'warlord',name:'Warlord',ach:'hard20',body:'#5a1e1e',arm:'#c9a23a',visor:'#ff6b4a',trim:'#c9a23a',glow:'#ff6b4a'},
  {id:'nightmare',name:'Nightmare',ach:'nm20',body:'#121218',arm:'#8a1020',visor:'#ff2244',trim:'#8a1020',glow:'#ff2244'},
+ {id:'inferno',name:'Inferno',ach:'tormentx',body:'#3a1208',arm:'#ff7a2a',visor:'#ffd27a',trim:'#ff4d1a',glow:'#ff6a2a',fx:'inferno'},
+ {id:'glacier',name:'Glacier',ach:'untouch',body:'#dff3ff',arm:'#7cc4ff',visor:'#9fe0ff',trim:'#ffffff',glow:'#9fe0ff',fx:'glacier'},
+ {id:'wraith',name:'Wraith',ach:'ironw',body:'#9aa8c8',arm:'#5a6a8a',visor:'#e6f0ff',trim:'#c8d4f0',glow:'#c8d4f0',fx:'wraith'},
+ {id:'solar',name:'Solar',ach:'endure',body:'#ffe9a8',arm:'#f2a83a',visor:'#fff6d6',trim:'#ffb547',glow:'#ffd27a',fx:'solar'},
+ {id:'abyss',name:'Abyss',ach:'regicide',body:'#120a1f',arm:'#6b3fb0',visor:'#c58cff',trim:'#8a5ad0',glow:'#b07dff',fx:'abyss'},
+ {id:'circuit',name:'Circuit',ach:'allcmd',body:'#16242a',arm:'#2a3a40',visor:'#5dffc0',trim:'#5dffc0',glow:'#5dffc0',fx:'circuit'},
+ {id:'chrome',name:'Chrome',ach:'grand',body:'#c9d2da',arm:'#8a96a2',visor:'#eef4f8',trim:'#ffffff',glow:'#e6eef5',fx:'chrome'},
  {id:'sovereign',name:'Sovereign',ach:'sov',body:'#2a0f1a',arm:'#f2c14e',visor:'#ff4d7a',trim:'#f2c14e',glow:'#ff4d7a'}
 ];
 function skin(id){const s=SKINS.find(k=>k.id===(id||meta.skin))||SKINS[0];if(!s.prism)return s;const h=(performance.now()/20)%360;return{body:`hsl(${h},55%,58%)`,arm:`hsl(${(h+180)%360},60%,50%)`,visor:`hsl(${(h+90)%360},90%,80%)`,trim:'#ffffff',glow:`hsl(${h},90%,65%)`}}
@@ -604,14 +637,14 @@ const creepD=()=>Math.max(POCKET+3,15-G.night);
 
 function newRun(diff,cmd){
  meta.diff=diff||meta.diff||'normal';if(diff==='torment'&&typeof pendTier==='number')meta.tier=pendTier;meta.cmd=cmd||meta.cmd||'eng';save();ST=S();
- G={v:VER,cols:COLS,rows:ROWS,grid:[],ore:ST.start,night:0,phase:'day',timer:60,enemies:[],queue:[],spawnT:0,spawnGap:1,spawnTiles:[],pops:[],shots:[],splats:[],kills:0,mined:0,drilled:0,oreAcc:0,xpRun:0,lvls:0,over:false,dark:0,tool:'wall',pk:{wall:'w',turret:'t',drill:'d',gen:'p'},shells:[],booms:[],parts:[],beams:[],strikes:[],slows:[],ab:{strike:0,shield:0,surge:0},abMax:{strike:1,shield:1,surge:1},aim:false,shieldT:0,surgeT:0,res:{dmg:0,rate:0,hp:0,ore:0,bounty:0,cd:0},st:{ore:{mine:0,drill:0,kill:0,bonus:0},dmg:{gun:0,cannon:0,flame:0,laser:0,trap:0,strike:0,hub:0},kills:{c:0,b:0,h:0,m:0,s:0,k:0,v:0},elites:0,bosses:0,built:0,maxWall:0,maxTur:0,breaches:0,lucky:0,jack:0},sides:[],flash:null,spark:null,baseHit:0,player:null,dist:[],diff:meta.diff,tier:meta.tier||1,units:[],speed:1,drone:null,weather:null,wNext:null,saveT:0,achT:0,siegeClean:false,umode:'one',cmd:meta.cmd,perks:{},void:0,mut:null,mNext:null,bolts:[],droneAssign:false,killC:0,refB:0,hist:[],hl:{ore:0,k:0},spits:[],aegisUsed:false,spire:false,aegis:false};
+ G={v:VER,cols:COLS,rows:ROWS,grid:[],ore:ST.start,night:0,phase:'day',timer:60,enemies:[],queue:[],spawnT:0,spawnGap:1,spawnTiles:[],pops:[],shots:[],splats:[],kills:0,mined:0,drilled:0,oreAcc:0,xpRun:0,lvls:0,over:false,dark:0,tool:'wall',pk:{wall:'w',turret:'t',drill:'d',gen:'p'},shells:[],booms:[],parts:[],beams:[],strikes:[],slows:[],ab:{strike:0,shield:0,surge:0},abMax:{strike:1,shield:1,surge:1},aim:false,shieldT:0,surgeT:0,res:{dmg:0,rate:0,hp:0,ore:0,bounty:0,cd:0},st:{ore:{mine:0,drill:0,kill:0,bonus:0},dmg:{gun:0,cannon:0,flame:0,laser:0,trap:0,strike:0,hub:0},kills:{c:0,b:0,h:0,m:0,s:0,k:0,v:0},elites:0,bosses:0,built:0,maxWall:0,maxTur:0,breaches:0,lucky:0,jack:0},sides:[],flash:null,spark:null,baseHit:0,player:null,dist:[],diff:meta.diff,tier:meta.tier||1,units:[],speed:1,drone:null,weather:null,wNext:null,saveT:0,achT:0,siegeClean:false,umode:'one',cmd:meta.cmd,perks:{},void:0,mut:null,mNext:null,bolts:[],droneAssign:false,killC:0,refB:0,hist:[],hl:{ore:0,k:0},spits:[],aegisUsed:false,spire:false,aegis:false,clock:0,kfx:[],trk:{tT:[],upg:false,ab:false,hubLow:1,wd:0,cs:0}};
  genMap();
  const b=G.base;
  G.player=newWorker(b.x-.5,b.y+.5);if(G.cmd==='over'){G.drone=newWorker(b.x+2.5,b.y+.5);G.ore+=200}
  pickSides();fit();centerOnBase();setTool('wall');paused=false;hideAll();$('abil').hidden=false;last=performance.now();
  toast('Seal the gap in the canyon wall',PAL.console,3200);saveRun();
 }
-function saveRun(){if(!runActive())return;try{localStorage.setItem(RKEY,JSON.stringify(Object.assign({},G,{pops:[],shots:[],parts:[],beams:[],booms:[],strikes:[],shells:[],slows:[],bolts:[],spits:[],shp:null,dist:[],flash:null,spark:null,cam:[camX/T,camY/T]}),(k,v)=>k==='cov'?undefined:v))}catch(e){}}
+function saveRun(){if(!runActive())return;try{localStorage.setItem(RKEY,JSON.stringify(Object.assign({},G,{pops:[],shots:[],parts:[],beams:[],booms:[],strikes:[],shells:[],slows:[],bolts:[],spits:[],kfx:[],shp:null,dist:[],flash:null,spark:null,cam:[camX/T,camY/T]}),(k,v)=>k==='cov'?undefined:v))}catch(e){}}
 function clearRun(){try{localStorage.removeItem(RKEY)}catch(e){}}
 function loadRun(){try{const d=JSON.parse(localStorage.getItem(RKEY)||'null');if(d&&d.v===VER&&!d.over)return migrate(d)}catch(e){}return null}
 function migrate(d){d.perks=d.perks||{};d.void=d.void||0;d.bolts=[];d.pk=Object.assign({wall:'w',turret:'t',drill:'d',gen:'p'},d.pk||{});d.killC=d.killC||0;d.refB=d.refB||0;d.st.dmg.tesla=d.st.dmg.tesla||0;d.st.dmg.perk=d.st.dmg.perk||0;if(d.cmd===undefined)d.cmd=null;d.units=d.units||[];d.tier=d.tier||1;d.spits=[];d.hist=d.hist||[];if(!d.hl){const o=d.st.ore;d.hl={ore:o.mine+o.drill+o.kill+o.bonus,k:d.kills}}d.st.dmg.titan=d.st.dmg.titan||0;
@@ -689,8 +722,9 @@ function forecast(n){const D=DF(),boss=n%5===0,siege=n%10===0,mult=(boss?1.5:1)*
  return{sw,fl,bl,siege,el:Math.round(eliteChance(n)*100)}}
 function endNight(){
  const n=G.night,mt=G.mut,b=Math.round((20+8*n)*ST.pm*oreMul()*(mt?2:1));G.ore+=b;G.st.ore.bonus+=b;addXP(15*n*(mt?1.5:1));G.phase='day';G.timer=35;pickSides();
- if(n%10===0&&G.st.breaches===G.siegeB)G.siegeClean=true;G.weather=null;G.wNext=n+1>=6&&Math.random()<.35?WKEYS[Math.random()*WKEYS.length|0]:null;G.mut=null;G.mNext=n+1>=8&&Math.random()<.25?MKEYS[Math.random()*MKEYS.length|0]:null;
+ if(n%10===0&&G.st.breaches===G.siegeB){G.siegeClean=true;if(G.trk)G.trk.cs++}G.weather=null;G.wNext=n+1>=6&&Math.random()<.35?WKEYS[Math.random()*WKEYS.length|0]:null;G.mut=null;G.mNext=n+1>=8&&Math.random()<.25?MKEYS[Math.random()*MKEYS.length|0]:null;
  {const ot=oreTot();G.hist=G.hist||[];G.hist.push({n,ore:Math.max(0,ot-(G.hl?G.hl.ore:0)),k:Math.max(0,G.kills-(G.hl?G.hl.k:0))});G.hl={ore:ot,k:G.kills};if(G.hist.length>400)G.hist.shift()}
+ if(n===50&&G.cmd&&G.trk){meta.cmd50=meta.cmd50||{};meta.cmd50[G.cmd]=1}
  if(n===50){const tu=G.diff==='nightmare'?1:G.diff==='torment'?(G.tier||1)+1:0;if(tu>(meta.tormentMax||0)){meta.tormentMax=tu;setTimeout(()=>toast(`Torment ${roman(tu)} unlocked`,PAL.gold,3200),2200)}}
  if(n>meta.best)meta.best=n;save();sfx.dawn();toast(`Night ${n} survived · +${fmt(b)} ore${mt?' (mutator bonus)':''}`,PAL.console);checkAch();saveRun();if(n%5===0)openPerk();
 }
@@ -700,13 +734,14 @@ function mk(type,tx,ty,px,py){
  const e={type,x:px,y:py,tx,ty,hp:d.hp*hm,max:d.hp*hm,spd:d.spd*(1+Math.min(.4,n*.015))*(G.mut==='frenzy'?1.4:1)*(D.spd||1),dmg:d.dmg*Math.pow(1.08,n-1)*D.dmg,rate:d.rate,cd:0,r:d.r,xp:d.xp,atk:null,hit:0,jx:(Math.random()-.5)*.25,jy:(Math.random()-.5)*.25,dir:Math.atan2(G.base.y+1-ty,G.base.x+1-tx),walk:Math.random()*6,bite:0,el:null,st:0,fly:!!d.fly,burn:0};
  meta.seen=meta.seen||{};if(!meta.seen[type])meta.seen[type]=1;
  if(!d.boss&&!d.fly&&(G.mut==='elite'||Math.random()<eliteChance(n))){e.el=ELS[Math.random()*ELS.length|0];meta.seenEl=meta.seenEl||{};meta.seenEl[e.el]=1;if(e.el==='swift')e.spd*=1.6;if(e.el==='giant'){e.hp*=2.2;e.max*=2.2;e.r*=1.3;e.dmg*=1.5}}
+ if(type==='X')e.born=G.clock||0;
  if(type==='sb'){e.shMax=e.max*1.5;e.sh=e.shMax;e.shT=0}
  return e;
 }
 function spawn(type){const tiles=G.spawnTiles;if(!tiles.length)return;const[x,y]=tiles[Math.random()*tiles.length|0];G.enemies.push(mk(type,x,y,x+.5,y+.5))}
 function hitCell(x,y,d){
  if(G.shieldT>0)return;
- const c=cell(x,y);if(isWl(c.t)&&G.aegis&&!G.aegisUsed&&c.hp-d*(1-(G.shp?G.shp[idx(x,y)]||0:0))<=0){G.aegisUsed=true;c.hp=c.max;G.shieldT=Math.max(G.shieldT,4);toast('Aegis Dome stopped a breach',PAL.power,2600);sfx.shield();return}d*=1-(G.shp?G.shp[idx(x,y)]||0:0);if(c.t==='b'){G.base.hp-=d;G.baseHit=.15;if(gate('hubT',4000))toast('Hub under attack!',PAL.danger);sfx.alarm();return}
+ const c=cell(x,y);if(isWl(c.t)&&G.aegis&&!G.aegisUsed&&c.hp-d*(1-(G.shp?G.shp[idx(x,y)]||0:0))<=0){G.aegisUsed=true;c.hp=c.max;G.shieldT=Math.max(G.shieldT,4);toast('Aegis Dome stopped a breach',PAL.power,2600);sfx.shield();return}d*=1-(G.shp?G.shp[idx(x,y)]||0:0);if(c.t==='b'){G.base.hp-=d;if(G.trk)G.trk.hubLow=Math.min(G.trk.hubLow,G.base.hp/G.base.max);G.baseHit=.15;if(gate('hubT',4000))toast('Hub under attack!',PAL.danger);sfx.alarm();return}
  c.hp-=d;c.hit=.12;
  if(c.hp<=0){if(c.t==='O')volBlast(x,y,c);G.grid[idx(x,y)]={t:'e'};pop(x+.5,y+.4,`${DEF[c.t].name} lost`,PAL.danger);if(isWl(c.t)){G.st.breaches++;toast('Wall breached!',PAL.danger);sfx.breach()}else sfx.crunch();computeFlow()}
 }
@@ -717,10 +752,10 @@ function dmgEnemy(e,d,src){
  if(src!=='rail'&&e.cov&&e.cov.hp>0&&e.cov.sh>0){const ab=Math.min(d,e.cov.sh);e.cov.sh-=ab;e.cov.shT=2;d-=ab;if(d<=0)return}
  if(ET[e.type].boss)d=Math.min(d,e.max*(e.type==='X'?.0025:.01));
  G.st.dmg[src]=(G.st.dmg[src]||0)+Math.min(d,e.hp);e.hp-=d;e.hit=.08;
- if(e.hp<=0){const D=ET[e.type],mul=e.el?2:1;if(e.type==='X'){meta.sovKills=(meta.sovKills||0)+1;meta.points+=25;const vb=Math.round(100000*G.night/100);G.void=(G.void||0)+vb;setTimeout(()=>toast(`Hive Sovereign defeated! +25 points, +${fmt(vb)} void`,PAL.gold,4500),100);sfx.dawn()}G.kills++;G.st.kills[e.type]=(G.st.kills[e.type]||0)+1;meta.bk=meta.bk||{};meta.bk[e.type]=(meta.bk[e.type]||0)+1;G.killC=(G.killC||0)+1;if(PK('crate')&&G.killC%10===0){const cv2=Math.round(40*Math.max(1,G.night)*PK('crate')*oreMul());G.ore+=cv2;G.st.ore.kill+=cv2;pop(e.x,e.y-.3,`+${fmt(cv2)} crate`,PAL.gold,true)}if(e.el)G.st.elites++;if(D.boss){G.st.bosses++;meta.bossTypes=meta.bossTypes||[];if(!meta.bossTypes.includes(e.type)){meta.bossTypes.push(e.type);save()}toast(`${D.name} down!`,PAL.gold)}
+ if(e.hp<=0){const D=ET[e.type],mul=e.el?2:1;if(e.type==='X'){meta.sovKills=(meta.sovKills||0)+1;if((G.clock||0)-(e.born||0)<=60)meta.regicide=1;if(G.diff==='torment'&&(G.tier||1)>=3)meta.sovT3=1;meta.points+=25;const vb=Math.round(100000*G.night/100);G.void=(G.void||0)+vb;setTimeout(()=>toast(`Hive Sovereign defeated! +25 points, +${fmt(vb)} void`,PAL.gold,4500),100);sfx.dawn()}G.kills++;G.st.kills[e.type]=(G.st.kills[e.type]||0)+1;meta.bk=meta.bk||{};meta.bk[e.type]=(meta.bk[e.type]||0)+1;G.killC=(G.killC||0)+1;if(PK('crate')&&G.killC%10===0){const cv2=Math.round(40*Math.max(1,G.night)*PK('crate')*oreMul());G.ore+=cv2;G.st.ore.kill+=cv2;pop(e.x,e.y-.3,`+${fmt(cv2)} crate`,PAL.gold,true)}if(e.el)G.st.elites++;if(D.boss){G.st.bosses++;meta.bossTypes=meta.bossTypes||[];if(!meta.bossTypes.includes(e.type)){meta.bossTypes.push(e.type);save()}toast(`${D.name} down!`,PAL.gold)}
   sfx.squish();addXP(e.xp*mul);const o=Math.round(D.ore*(1+.08*G.night)*ST.pm*(1+.25*G.res.bounty)*mul*(G.weather==='blood'?1.5:1)*(G.mut==='gold'?3:1)*oreMul());G.ore+=o;G.st.ore.kill+=o;if(e.type!=='c'||e.el)pop(e.x,e.y,`+${o} ore`,PAL.ore);
   if(e.el==='volatile')explode(e.x,e.y,1.3,e.dmg*3);
-  G.splats.push({x:e.x,y:e.y,r:e.r*1.4,t:10,col:D.dk,s:Math.random()*99|0});if(G.splats.length>90)G.splats.shift()}
+  if(meta.kfx&&meta.kfx!=='splat'){G.kfx=G.kfx||[];if(G.kfx.length<150)G.kfx.push({x:e.x,y:e.y,k:meta.kfx,t:.8,s:Math.random()*9999|0,r:e.r})}else{G.splats.push({x:e.x,y:e.y,r:e.r*1.4,t:10,col:D.dk,s:Math.random()*99|0});if(G.splats.length>90)G.splats.shift()}}
 }
 function explode(x,y,R,dmg){G.booms.push({x,y,r:R,t:.35,max:.35});sfx.boom();let hb=false;
  for(let ty=Math.floor(y-R);ty<=Math.floor(y+R);ty++)for(let tx=Math.floor(x-R);tx<=Math.floor(x+R);tx++){if(!inb(tx,ty))continue;const c=cell(tx,ty);if(!(isS(c.t)||c.t==='b'))continue;if(Math.hypot(tx+.5-x,ty+.5-y)>R+.3)continue;if(c.t==='b'){if(hb)continue;hb=true}hitCell(tx,ty,dmg)}}
@@ -754,7 +789,7 @@ function slowAt(e){let f=1;for(const s of G.slows)if(Math.hypot(e.x-s[0],e.y-s[1
 function fireLaser(c,cx,cy,R){const dmg=tDmgOf(c),split=c.spec==='b',angs=split?[c.ang-.28,c.ang,c.ang+.28]:[c.ang];sfx.laser();
  for(const an of angs){const ca=Math.cos(an),sa=Math.sin(an);for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.x-cx,ey=e.y-cy,al=ex*ca+ey*sa,pp=Math.abs(-ex*sa+ey*ca);if(al>0&&al<R+.3&&pp<e.r+.18)dmgEnemy(e,dmg*(split?.7:1),'laser')}
   G.beams.push({x1:cx+ca*.45,y1:cy+sa*.45,x2:cx+ca*R,y2:cy+sa*R,t:.25,w:Math.min(7,2.5+c.lvl*.15)*(c.spec==='a'?1.5:1)})}}
-function killPlayer(p){sfx.worker();p.dead=4;p.hp=0;p.path=[];p.mine=null;toast(p===G.player?'Worker down · respawning':'Drone down · rebooting',PAL.danger)}
+function killPlayer(p){sfx.worker();if(p===G.player&&G.trk)G.trk.wd++;p.dead=4;p.hp=0;p.path=[];p.mine=null;toast(p===G.player?'Worker down · respawning':'Drone down · rebooting',PAL.danger)}
 function pop(x,y,text,col,small){G.pops.push({x,y,text,col,t:1,small})}
 function flash(x,y,ok){G.flash={x,y,t:.35,ok};if(!ok)sfx.error()}
 function enemyOn(x,y){return G.enemies.some(e=>e.hp>0&&((Math.floor(e.x)===x&&Math.floor(e.y)===y)||(e.tx===x&&e.ty===y)))}
@@ -899,7 +934,7 @@ function act(x,y){
   if(G.ore<d.cost){toast(`Need ${fmt(d.cost)} ore`,PAL.danger);return flash(x,y,false)}
   G.ore-=d.cost;G.void=(G.void||0)-(d.vc||0);if(isWonder(t))toast(`${d.name} complete`,PAL.gold,2600);const hp=maxHpOf(t,1);
   G.grid[idx(x,y)]={t,hp,max:hp,lvl:1,spent:d.cost,hit:0,cd:0,ang:-Math.PI/2};
-  computeFlow();flash(x,y,true);sfx.build();G.st.built++;if(isWl(t))G.st.maxWall=Math.max(G.st.maxWall,1);if(isT(t))G.st.maxTur=Math.max(G.st.maxTur,1);
+  computeFlow();flash(x,y,true);sfx.build();G.st.built++;if(G.trk&&isT(t)&&!G.trk.tT.includes(t))G.trk.tT.push(t);if(isWl(t))G.st.maxWall=Math.max(G.st.maxWall,1);if(isT(t))G.st.maxTur=Math.max(G.st.maxTur,1);
   if(isWl(t)&&sealed()){toast('Pocket sealed',PAL.console);setTimeout(()=>sfx.dawn(),150)}
   if(t==='h'&&!poweredAt(x,y))toast('Healer needs a Power Core nearby',PAL.power,2600);
   if(t==='L')toast('Lab built · tap it to research',KN.L[1],2600);
@@ -955,22 +990,22 @@ function achToast(){if(achBusy||!achQ.length)return;achBusy=true;const a=achQ.sh
 function upCol(t){return t==='p'?PAL.power:t==='h'?PAL.ok:isT(t)?TK[t].col:t==='d'?PAL.ore:isTrap(t)?KN[t][1]:'#cfe0e4'}
 function upNeed(c){const vc=vcost(c),cost=upCostOf(c.t,c.lvl);return G.ore<cost?`${fmt(cost)} ore`:`${vc} void crystal${vc>1?'s':''}`}
 function lvUp(x,y,c,quiet){const d=DEF[c.t];if(c.lvl>=capOf(c.t))return 0;const cost=upCostOf(c.t,c.lvl),vc=vcost(c);if(G.ore<cost||(G.void||0)<vc)return -cost;
- G.ore-=cost;G.void=(G.void||0)-vc;c.spent+=cost;c.lvl++;if(isWl(c.t))G.st.maxWall=Math.max(G.st.maxWall,c.lvl);if(isT(c.t))G.st.maxTur=Math.max(G.st.maxTur,c.lvl);
+ G.ore-=cost;G.void=(G.void||0)-vc;c.spent+=cost;c.lvl++;if(G.trk)G.trk.upg=true;if(isWl(c.t))G.st.maxWall=Math.max(G.st.maxWall,c.lvl);if(isT(c.t))G.st.maxTur=Math.max(G.st.maxTur,c.lvl);
  if(isT(c.t)&&c.lvl===10&&!c.spec)toast('Turret can specialize · tap it with Upgrade set to One',PAL.gold,2600);
  const nm=maxHpOf(c.t,c.lvl);c.hp+=Math.max(0,nm-c.max);c.max=nm;if(!quiet)pop(x+.5,y+.3,`${d.name} Lv ${c.lvl}`,upCol(c.t));return cost}
-function upgradeHub(q){const B=G.base;if(B.lvl>=HUBMAX){toast('Hub is max level');return}const cost=hubCost(B.lvl),hv=hubV(B.lvl);if(G.ore<cost||(G.void||0)<hv){toast(`Hub Lv ${B.lvl+1} needs ${fmt(cost)} ore${hv?' + '+fmt(hv)+' void':''}`,PAL.danger);sfx.error();return}G.void=(G.void||0)-hv;if(B.lvl===20)setTimeout(()=>toast('Hub ascended · more cannons and turret damage',PAL.gold,2800),50);
+function upgradeHub(q){const B=G.base;if(B.lvl>=HUBMAX){toast('Hub is max level');return}const cost=hubCost(B.lvl),hv=hubV(B.lvl);if(G.ore<cost||(G.void||0)<hv){toast(`Hub Lv ${B.lvl+1} needs ${fmt(cost)} ore${hv?' + '+fmt(hv)+' void':''}`,PAL.danger);sfx.error();return}G.void=(G.void||0)-hv;if(G.trk)G.trk.upg=true;if(B.lvl===20)setTimeout(()=>toast('Hub ascended · more cannons and turret damage',PAL.gold,2800),50);
  if(!q)sfx.upgrade();G.ore-=cost;B.lvl++;const nm=hubMax(B.lvl);B.hp+=nm-B.max;B.max=nm;pop(B.x+1,B.y+.3,`Hub Lv ${B.lvl}`,PAL.gold);
  if(B.lvl===2)toast('Hub auto-repair online',PAL.console,2400);else if(B.lvl===3)toast('Hub cannon online',PAL.console,2400)}
 function abCd(k){return AB_CD[k]*(1-.08*G.res.cd)*(1-Math.min(.3,.02*(G.base.lvl-1)))*(G.cmd==='tact'?.7:1)*Math.max(.3,1-.2*PK('quick'))/(1+.01*PL('cd'))}
 function useAb(k){if(!runActive()||paused)return;
  if(G.ab[k]>0){toast(`Ready in ${Math.ceil(G.ab[k])}s`);sfx.error();return}
  if(k==='strike'){G.aim=!G.aim;sfx.click();if(G.aim)toast('Tap where to strike','#ffe7a8',2200);return}
- G.ab[k]=G.abMax[k]=abCd(k);
+ G.ab[k]=G.abMax[k]=abCd(k);if(G.trk)G.trk.ab=true;
  if(k==='shield'){G.shieldT=6;sfx.shield();toast('Shields up · no building damage for 6s',PAL.power)}
  else{G.surgeT=15;sfx.surge();toast('Ore surge · triple ore for 15s',PAL.ore)}}
 function doStrike(x,y){G.aim=false;const cx=x+.5,cy=y+.5,R=2.5,dmg=120*Math.pow(1.2,Math.max(0,G.night-1))*(1+.15*G.res.dmg)*(G.cmd==='tact'?1.5:1);
  for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-cx,e.y-cy);if(d<R+e.r)dmgEnemy(e,dmg*(1-.3*Math.min(1,d/R)),'strike')}
- G.strikes.push({x:cx,y:cy,t:.6});G.booms.push({x:cx,y:cy,r:R,t:.5,max:.5});G.ab.strike=G.abMax.strike=abCd('strike');sfx.strike()}
+ G.strikes.push({x:cx,y:cy,t:.6});G.booms.push({x:cx,y:cy,r:R,t:.5,max:.5});G.ab.strike=G.abMax.strike=abCd('strike');if(G.trk)G.trk.ab=true;sfx.strike()}
 function openLab(){if(!runActive())return;if(!G.grid.some(q=>q.t==='L')){toast('Build a Research Lab first (Drill picker)');return}paused=true;G.aim=false;subFrom='game';show('lab')}
 function rescaleHP(){for(const c of G.grid){if(!isS(c.t))continue;const nm=maxHpOf(c.t,c.lvl);c.hp*=nm/c.max;c.max=nm}const B=G.base,nm=hubMax(B.lvl);B.hp*=nm/B.max;B.max=nm}
 function poweredAt(x,y){for(let gy=0;gy<G.rows;gy++)for(let gx=0;gx<G.cols;gx++){const c=cell(gx,gy);if(c.t==='p'&&Math.hypot(gx-x,gy-y)<=genR(c.lvl))return true}return false}
@@ -983,6 +1018,7 @@ function sealed(){
 }
 
 function update(dt){
+ G.clock=(G.clock||0)+dt;
  tAnim+=dt;
  if(G.phase==='day'){G.timer-=dt;if(G.timer<=0)startNight()}
  else{if(G.queue.length){G.spawnT-=dt;if(G.spawnT<=0){spawn(G.queue.shift());G.spawnT=G.spawnGap}}else if(!G.enemies.length)endNight()}
@@ -1003,6 +1039,7 @@ function update(dt){
  for(const b of G.strikes)b.t-=dt;G.strikes=G.strikes.filter(b=>b.t>0);
  for(const k in G.ab)G.ab[k]=Math.max(0,G.ab[k]-dt*(G.weather==='ion'?2:1));G.shieldT-=dt;G.surgeT-=dt;
  for(const s of G.splats)s.t-=dt;G.splats=G.splats.filter(s=>s.t>0);
+ G.kfx=G.kfx||[];for(const k of G.kfx)k.t-=dt;G.kfx=G.kfx.filter(k=>k.t>0);
  for(const c of G.grid)if(c.hit>0)c.hit-=dt;
  if(G.flash){G.flash.t-=dt;if(G.flash.t<=0)G.flash=null}
  if(G.spark){G.spark.t-=dt;if(G.spark.t<=0)G.spark=null}
@@ -1253,7 +1290,14 @@ function drawTurret(px,py,cx,cy,c){
  lvlTag(px,py,c.lvl,K.col);
  if(c.spec){ctx.fillStyle=c.spec==='a'?PAL.gold:'#7cf7ff';ctx.beginPath();ctx.moveTo(px+6,py+2);ctx.lineTo(px+10,py+6);ctx.lineTo(px+6,py+10);ctx.lineTo(px+2,py+6);ctx.closePath();ctx.fill()}
 }
-function drawFx(){const fx=meta.fx||'reduced',A=fx==='full'?1:fx==='minimal'?.35:.6;
+function drawKfx(){for(const k of G.kfx||[]){const p=1-k.t/.8,r=hash(k.s,7,1),n=meta.fx==='minimal'?4:7,R=(k.r+.5)*T;ctx.globalAlpha=Math.max(0,1-p);
+  for(let i=0;i<n;i++){const a=r()*6.283,sp=.5+r()*.8,x=k.x*T+Math.cos(a)*R*sp*p,y=k.y*T+Math.sin(a)*R*sp*p;
+   if(k.k==='sparks'){ctx.strokeStyle=i%2?'#ffe08a':'#ffb347';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-Math.cos(a)*T*.18,y-Math.sin(a)*T*.18);ctx.stroke()}
+   else if(k.k==='shards'){ctx.save();ctx.translate(x,y);ctx.rotate(a+p*6);ctx.fillStyle=i%2?'#b07dff':'#59b7ff';ctx.beginPath();ctx.moveTo(0,-T*.1);ctx.lineTo(T*.05,T*.06);ctx.lineTo(-T*.05,T*.06);ctx.closePath();ctx.fill();ctx.restore()}
+   else if(k.k==='coins'){const cy=y-Math.sin(p*Math.PI)*T*.6;ctx.fillStyle='#f2c14e';ctx.beginPath();ctx.ellipse(x,cy,T*.07*Math.abs(Math.cos(p*12+i)),T*.07,0,0,7);ctx.fill();ctx.strokeStyle='#8a6516';ctx.lineWidth=1;ctx.stroke()}
+   else{const ay=y-p*T*.7;ctx.fillStyle=i%2?'#6b6b6b':'#9a9a9a';ctx.beginPath();ctx.arc(x*.6+k.x*T*.4,ay,T*.05*(1-p*.5),0,7);ctx.fill()}}}
+ ctx.globalAlpha=1}
+function drawFx(){const fx=meta.fx||'reduced',A=fx==='full'?1:fx==='minimal'?.35:.6;drawKfx();
  for(const sh of G.shells){const k=Math.min(1,sh.t/sh.dur),x=(sh.x1+(sh.x2-sh.x1)*k)*T,y=(sh.y1+(sh.y2-sh.y1)*k)*T-Math.sin(k*Math.PI)*T*.5;ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(x,y,Math.max(2,T*.08),0,7);ctx.fill();ctx.fillStyle='#ffd27a';ctx.beginPath();ctx.arc(x,y,Math.max(1,T*.035),0,7);ctx.fill()}
  for(const sp of G.spits||[]){const k=Math.min(1,sp.t/sp.dur),x=(sp.x1+(sp.x2-sp.x1)*k)*T,y=(sp.y1+(sp.y2-sp.y1)*k)*T-Math.sin(k*Math.PI)*T*.35;ctx.fillStyle='#a6e05a';ctx.beginPath();ctx.arc(x,y,Math.max(2,T*.08),0,7);ctx.fill()}
  for(const s2 of G.strikes){const k=s2.t/.6,x=s2.x*T,y=s2.y*T,w=T*.7*k;ctx.globalAlpha=k*A;ctx.fillStyle='#bfefff';ctx.fillRect(x-w/2,y-2000,w,2000);ctx.fillStyle='#ffffff';ctx.fillRect(x-w/6,y-2000,w/3,2000)}
@@ -1271,8 +1315,24 @@ function drawFx(){const fx=meta.fx||'reduced',A=fx==='full'?1:fx==='minimal'?.35
  for(const b of bl){ctx.globalAlpha=(b.t/.25)*A;ctx.lineCap='round';ctx.strokeStyle=b.col||'#c084ff';ctx.lineWidth=fx==='full'?b.w*1.8:Math.min(b.w,3)*(fx==='minimal'?.6:1);ctx.beginPath();ctx.moveTo(b.x1*T,b.y1*T);ctx.lineTo(b.x2*T,b.y2*T);ctx.stroke();if(fx==='full'){ctx.strokeStyle='#f3e8ff';ctx.lineWidth=b.w*.6;ctx.stroke()}}
  ctx.globalAlpha=1;ctx.lineCap='butt';
 }
+function mechBack(g,px,py,r,face,sk,t){const fx=sk.fx;
+ if(fx==='inferno'){for(let i=0;i<6;i++){const a=i*1.047+t*.6,fh=r*(.5+.35*Math.abs(Math.sin(t*7+i*1.7))),bx=px+Math.cos(a)*r*.55,by=py+Math.sin(a)*r*.45;const gr=g.createLinearGradient(bx,by,bx,by-fh*1.6);gr.addColorStop(0,'rgba(255,90,20,.85)');gr.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=gr;g.beginPath();g.moveTo(bx-r*.18,by);g.quadraticCurveTo(bx,by-fh*2.2,bx+r*.18,by);g.fill()}}
+ else if(fx==='solar'){g.save();g.translate(px,py);g.rotate(t*.5);g.strokeStyle=`rgba(255,200,90,${.45+.25*Math.sin(t*3)})`;g.lineWidth=Math.max(1.2,r*.1);for(let i=0;i<12;i++){const a=i*Math.PI/6;g.beginPath();g.moveTo(Math.cos(a)*r*1.05,Math.sin(a)*r*1.05);g.lineTo(Math.cos(a)*r*(1.35+.15*Math.sin(t*4+i)),Math.sin(a)*r*(1.35+.15*Math.sin(t*4+i)));g.stroke()}g.restore()}
+ else if(fx==='wraith'){for(let k=1;k<=2;k++){g.globalAlpha=.22/k;g.fillStyle=sk.body;g.beginPath();g.ellipse(px-Math.cos(face)*r*.55*k,py-Math.sin(face)*r*.55*k,r*.8,r*.66,face,0,7);g.fill()}g.globalAlpha=1}
+ else if(fx==='abyss'){g.globalAlpha=.3+.15*Math.sin(t*2);g.fillStyle='#4a2a7a';g.beginPath();g.arc(px,py,r*1.25,0,7);g.fill();g.globalAlpha=1}}
+function mechTop(g,px,py,r,sk,t){const fx=sk.fx;
+ if(fx==='abyss'){for(let i=0;i<5;i++){const a=t*1.8+i*1.2566;g.fillStyle=i%2?'#c58cff':'#7a4fd0';g.beginPath();g.arc(px+Math.cos(a)*r*1.35,py+Math.sin(a)*r*.9,Math.max(1.2,r*.1),0,7);g.fill()}}
+ else if(fx==='glacier'){g.fillStyle='rgba(235,248,255,.9)';for(let i=0;i<6;i++){const ph=(t*.35+i/6)%1,x=px+Math.sin(i*2.3+t)*r*1.1,y=py-r*1.2+ph*r*2.4;g.globalAlpha=1-Math.abs(ph-.5)*2;g.beginPath();g.arc(x,y,Math.max(1,r*.07),0,7);g.fill()}g.globalAlpha=1}}
+function mechFront(g,r,sk,t){const fx=sk.fx;if(!fx)return;
+ g.save();g.beginPath();g.ellipse(0,0,r*.85,r*.7,0,0,7);g.clip();
+ if(fx==='circuit'){g.strokeStyle=sk.trim;g.lineWidth=Math.max(1,r*.07);g.setLineDash([r*.25,r*.2]);g.lineDashOffset=-t*r*1.5;for(const y of[-.35,0,.35]){g.beginPath();g.moveTo(-r,y*r);g.lineTo(-r*.2,y*r);g.lineTo(0,y*r*.4);g.lineTo(r,y*r*.4);g.stroke()}g.setLineDash([])}
+ else if(fx==='chrome'){const x=((t*.6)%1.6-.8)*r*2.2;const gr=g.createLinearGradient(x-r*.4,0,x+r*.4,0);gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.5,'rgba(255,255,255,.75)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(-r,-r,r*2,r*2)}
+ else if(fx==='glacier'){g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=1;for(let i=0;i<3;i++){g.beginPath();g.moveTo(-r*.6+i*r*.35,-r*.6);g.lineTo(-r*.4+i*r*.35,r*.6);g.stroke()}}
+ else if(fx==='inferno'){g.globalAlpha=.35+.25*Math.sin(t*9);g.fillStyle='#ff6a2a';g.fillRect(-r,-r,r*2,r*2);g.globalAlpha=1}
+ g.restore()}
 function drawMech(g,px,py,r,face,sk,arm){
- g.save();g.translate(px,py);g.rotate(face);
+ const tt=performance.now()/1000;if(sk.fx)mechBack(g,px,py,r,face,sk,tt);
+ g.save();g.translate(px,py);g.rotate(face);if(sk.fx==='wraith')g.globalAlpha=.68;
  g.strokeStyle=sk.arm;g.lineWidth=Math.max(1.5,r*.14);g.lineCap='round';
  g.beginPath();g.moveTo(r*.3,-r*.45);g.lineTo(r*1.0+arm,-r*.32);g.lineTo(r*1.25+arm,-r*.08);g.moveTo(r*.3,r*.45);g.lineTo(r*1.0+arm,r*.32);g.lineTo(r*1.25+arm,r*.08);g.stroke();g.lineCap='butt';
  g.fillStyle=sk.trim;g.beginPath();g.moveTo(-r*.55,-r*.5);g.lineTo(-r*1.08,-r*.8);g.lineTo(-r*.82,-r*.18);g.closePath();g.fill();g.beginPath();g.moveTo(-r*.55,r*.5);g.lineTo(-r*1.08,r*.8);g.lineTo(-r*.82,r*.18);g.closePath();g.fill();
@@ -1280,18 +1340,29 @@ function drawMech(g,px,py,r,face,sk,arm){
  g.globalAlpha=.45;g.fillStyle=sk.visor;g.beginPath();g.arc(r*.15,0,r*.5,0,7);g.fill();g.globalAlpha=1;
  g.beginPath();g.arc(r*.15,0,r*.3,0,7);g.fillStyle=sk.visor;g.fill();
  g.fillStyle='rgba(255,255,255,.8)';g.beginPath();g.arc(r*.08,-r*.1,r*.1,0,7);g.fill();
- g.restore();
+ if(sk.fx)mechFront(g,r,sk,tt);
+ g.restore();if(sk.fx)mechTop(g,px,py,r,sk,tt);
 }
+function hubAlt(hs,cx,cy,hy,P,sk,hit){
+ if(hs==='citadel'){rrect(ctx,cx-T*.92,cy-T*.92,T*1.84,T*1.84,T*.14);ctx.fillStyle=hit?'#7a3038':P.plate2;ctx.fill();ctx.strokeStyle=P.trim;ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle=P.trim;for(let i=0;i<5;i++){const o=-T*.7+i*T*.35;ctx.fillRect(cx+o-T*.06,cy-T*.98,T*.12,T*.1);ctx.fillRect(cx+o-T*.06,cy+T*.88,T*.12,T*.1)}
+  rrect(ctx,cx-T*.55,cy-T*.55,T*1.1,T*1.1,T*.1);ctx.fillStyle=hit?'#8a3a42':P.plate;ctx.fill();ctx.strokeStyle=P.dark;ctx.lineWidth=1.5;ctx.stroke();
+  for(const[sx,sy]of[[-1,-1],[1,-1],[-1,1],[1,1]]){const tx=cx+sx*T*.78,ty=cy+sy*T*.78;ctx.beginPath();ctx.arc(tx,ty,T*.2,0,7);ctx.fillStyle=P.plate;ctx.fill();ctx.strokeStyle=P.trim;ctx.lineWidth=2;ctx.stroke();orb(tx,ty,T*.07,sk.glow,.6+.3*Math.sin(tAnim*3+sx+sy))}
+  ctx.globalAlpha=.25;ctx.fillStyle=sk.glow;ctx.fillRect(cx-T*.45,cy-T*.45,T*.9,T*.9);ctx.globalAlpha=1;hexCrystal(cx,hy,T*.19,T*.4,sk.glow,'#ffffff')}
+ else{ctx.globalAlpha=.18+.08*Math.sin(tAnim*2);ctx.fillStyle=sk.glow;ctx.beginPath();ctx.arc(cx,cy,T*.95,0,7);ctx.fill();ctx.globalAlpha=1;
+  for(let i=0;i<3;i++){const R=T*(.45+i*.22),a0=tAnim*(i%2?-.7:.9)+i;ctx.strokeStyle=i===1?sk.glow:P.trim;ctx.lineWidth=T*(.09-i*.02);ctx.lineCap='round';for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(cx,cy,R,a0+k*2.094,a0+k*2.094+1.4);ctx.stroke()}}
+  ctx.lineCap='butt';const fy=hy-T*.08;ctx.globalAlpha=.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.beginPath();ctx.ellipse(cx,cy+T*.35,T*.25,T*.08,0,0,7);ctx.fill();ctx.globalAlpha=1;hexCrystal(cx,fy,T*.22,T*.5,sk.glow,'#ffffff')}}
 function drawBase(){
  const b=G.base,cx=(b.x+1)*T,cy=(b.y+1)*T,hit=G.baseHit>0,lv=b.lvl||1,P=tp(Math.min(30,Math.floor(lv*1.5))),sk=skin(),hy=cy-T*.12+Math.sin(tAnim*1.5)*T*.05,tr=Math.min(6,Math.floor(lv*1.5/5));
  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(cx+4,cy+6,T*.95,T*.8,0,0,7);ctx.fill();
+ const hs=meta.hub||'temple';if(hs==='citadel'||hs==='nexus')hubAlt(hs,cx,cy,hy,P,sk,hit);else{
  ctx.beginPath();ctx.arc(cx,cy,T*.94,0,7);ctx.fillStyle=hit?'#7a3038':P.plate2;ctx.fill();ctx.strokeStyle=P.trim;ctx.lineWidth=2;ctx.stroke();
  ctx.strokeStyle=P.trim;ctx.lineWidth=T*.16;for(let i=0;i<8;i++){const a=i*Math.PI/4+.12;ctx.beginPath();ctx.arc(cx,cy,T*.76,a,a+.55);ctx.stroke()}
  ctx.beginPath();ctx.arc(cx,cy,T*.6,0,7);ctx.fillStyle=hit?'#8a3a42':P.plate;ctx.fill();ctx.strokeStyle=P.dark;ctx.lineWidth=1.5;ctx.stroke();
  ctx.globalAlpha=.25+.15*Math.sin(tAnim*2.5);ctx.fillStyle=sk.glow;ctx.beginPath();ctx.arc(cx,cy,T*.5,0,7);ctx.fill();ctx.globalAlpha=1;
  hexCrystal(cx,hy,T*.17,T*.38,sk.glow,'#ffffff');
  ctx.strokeStyle=P.trim;ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(cx,hy,T*.44,T*.13,tAnim*.4,0,7);ctx.stroke();
- ctx.globalAlpha=.6;ctx.strokeStyle=sk.glow;ctx.beginPath();ctx.ellipse(cx,hy,T*.36,T*.11,-tAnim*.6,0,7);ctx.stroke();ctx.globalAlpha=1;
+ ctx.globalAlpha=.6;ctx.strokeStyle=sk.glow;ctx.beginPath();ctx.ellipse(cx,hy,T*.36,T*.11,-tAnim*.6,0,7);ctx.stroke();ctx.globalAlpha=1;}
  if(lv>20){const n=Math.min(10,lv-20);ctx.strokeStyle='#c58cff';ctx.lineWidth=2;ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(cx,cy,T*1.02,tAnim*.6,tAnim*.6+Math.PI*1.4);ctx.stroke();ctx.globalAlpha=1;
   ctx.fillStyle=PAL.gold;for(let i=0;i<5;i++){const a=-Math.PI/2+(i-2)*.32;ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*T*.93,cy+Math.sin(a)*T*.93);ctx.lineTo(cx+Math.cos(a)*T*(1.18+(i===2?.12:0)),cy+Math.sin(a)*T*(1.18+(i===2?.12:0)));ctx.lineTo(cx+Math.cos(a+.1)*T*.93,cy+Math.sin(a+.1)*T*.93);ctx.fill()}
   for(let i=0;i<n;i++){const a=-tAnim*.9+i*6.283/n;orb(cx+Math.cos(a)*T*1.25,cy+Math.sin(a)*T*1.25,T*.05,'#e2b8ff',.85)}}
@@ -1507,6 +1578,7 @@ function makeCard(){const W=1080,H=1350,c=document.createElement('canvas');c.wid
  const st=G.st,o=st.ore,sv=G.night-(G.phase==='night'?1:0),ot=o.mine+o.drill+o.kill+o.bonus;g.textAlign='center';
  g.fillStyle='#8ff5a0';g.font=F(600,36);g.fillText('MINERAL SIEGE',W/2,140);
  g.fillStyle='#fff';g.font=F(700,200);g.fillText(sv,W/2,370);g.fillStyle='#8f9ba5';g.font=F(600,42);g.fillText(sv===1?'NIGHT SURVIVED':'NIGHTS SURVIVED',W/2,435);
+ {const ta=meta.title&&meta.ach&&meta.ach[meta.title]?ACH.find(x=>x.id===meta.title):null;if(ta){g.fillStyle='#f2c14e';g.font=F(600,32);g.fillText(ta.name.toUpperCase(),W/2,190)}}
  g.fillStyle='#f2c14e';g.font=F(600,34);g.fillText([DF().name,G.cmd&&CMDS[G.cmd]?CMDS[G.cmd].name:null,meta.prestige?'★'+meta.prestige:null].filter(Boolean).join('  ·  ').toUpperCase(),W/2,495);
  const sk=skin();g.globalAlpha=.35;g.fillStyle=sk.glow;g.beginPath();g.arc(W/2,650,150,0,7);g.fill();g.globalAlpha=1;drawMech(g,W/2,650,105,-Math.PI/2,sk,0);
  const items=[['KILLS',fmt(G.kills)],['ORE EARNED',fmt(ot)],['BOSSES',fmt(st.bosses||0)],['TOP WALL',st.maxWall?'LV '+st.maxWall:'-'],['TOP TURRET',st.maxTur?'LV '+st.maxTur:'-'],['XP',fmt(G.xpRun)]];
@@ -1516,7 +1588,7 @@ function openShare(){if(!G)return;const c=makeCard();$('shareImg').src=c.toDataU
  try{c.toBlob(bl=>{if(!bl)return;const f=new File([bl],'mineral-siege-run.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){sb.hidden=false;sb.onclick=()=>navigator.share({files:[f],title:'Mineral Siege'}).catch(()=>{})}},'image/png')}catch(e){}
  openSub('share')}
 function renderAch(){const L=$('achList'),done=ACH.filter(a=>meta.ach&&meta.ach[a.id]).length;$('achCount').textContent=`${done}/${ACH.length}`;
- L.innerHTML=ACH.map(a=>{const ok=meta.ach&&meta.ach[a.id];return`<div class="up${ok?' ach-done':''}"><div class="up-txt"><div class="up-name">${ok?'✓ ':''}${a.name}</div><div class="up-fx">${a.desc}</div></div><div class="rank">+${a.pts} pts${a.skin?' + skin':''}</div></div>`}).join('')}
+ L.innerHTML=ACH.map(a=>{const ok=meta.ach&&meta.ach[a.id];return`<div class="up${ok?' ach-done':''}"><div class="up-txt"><div class="up-name">${ok?'✓ ':''}${a.name}</div><div class="up-fx">${a.desc}</div></div><div class="rank">+${a.pts} pts${a.skin?' + skin':''}${[THEMES,HUBS,KFX].some(o=>Object.values(o).some(v=>v.ach===a.id))?' + cosmetic':''}</div></div>`}).join('')}
 function renderLab(){$('labOre').textContent=Math.floor(G?G.ore:0);const list=$('labList');list.innerHTML='';if(!G)return;
  for(const r of RES){const l=G.res[r.id],mx=l>=r.max,cost=Math.round(r.base*Math.pow(r.g,l)),row=document.createElement('div');row.className='up';
   row.innerHTML=`<div class="up-txt"><div class="up-name">${r.name}<span class="rank">${l}/${r.max}</span></div><div class="up-fx">${mx?r.fx(l):`Next: <b>${r.fx(l+1)}</b>`}</div></div><button class="buy" ${mx||G.ore<cost?'disabled':''}>${mx?'Max':cost+' ore'}</button>`;
@@ -1581,10 +1653,15 @@ function renderSkins(){const b=$('skinsBody');b.innerHTML='';
  for(const sk of SKINS){const un=sk.ach?!!(meta.ach&&meta.ach[sk.ach]):meta.prestige>=sk.need,on=(meta.skin||'std')===sk.id,btn=document.createElement('button');btn.className='skin';btn.setAttribute('aria-pressed',String(on));btn.disabled=!un;
   const cvs=document.createElement('canvas');cvs.width=128;cvs.height=128;btn.append(cvs);btn.insertAdjacentHTML('beforeend',`${sk.name}<small>${un?(on?'Equipped':'Tap to equip'):sk.ach?'Achievement: '+(ACH.find(a=>a.id===sk.ach)||{}).name:'Unlocks at ★'+sk.need}</small>`);
   const g=cvs.getContext('2d');g.scale(2,2);g.fillStyle='#151b20';g.fillRect(0,0,64,64);drawMech(g,30,32,17,-.35,skin(sk.id),0);if(!un){g.fillStyle='rgba(0,0,0,.55)';g.fillRect(0,0,64,64)}
-  btn.onclick=()=>{if(!un)return;meta.skin=sk.id;save();sfx.click();renderSkins()};b.append(btn)}}
+  btn.onclick=()=>{if(!un)return;meta.skin=sk.id;save();sfx.click();renderSkins()};b.append(btn)}
+ const sect=(title,key,opts,def)=>{const cur=meta[key]||def;return`<div class="sect"><div class="k">${title}</div><div class="cgrid">${Object.entries(opts).map(([k,o])=>{const un=cosUn(o);return`<button class="dbtn" data-c="${key}" data-v="${k}" aria-pressed="${cur===k}" ${un?'':'disabled'}>${o.name}<small>${un?(cur===k?'Equipped':'Tap to equip'):cosLock(o)}</small></button>`}).join('')}</div></div>`};
+ const tl={'':{name:'No title'}};for(const a of ACH)if(meta.ach&&meta.ach[a.id])tl[a.id]={name:a.name};
+ $('cosBody').innerHTML=sect('Base theme','theme',THEMES,'none')+sect('Hub style','hub',HUBS,'temple')+sect('Kill effect','kfx',KFX,'splat')+`<div class="sect"><div class="k">Title</div><p class="sub">Shown on your menu and share card. Earn achievements to unlock more.</p><div class="cgrid">${Object.entries(tl).map(([k,o])=>`<button class="dbtn" data-c="title" data-v="${k}" aria-pressed="${(meta.title||'')===k}">${o.name}</button>`).join('')}</div></div>`;
+ $('cosBody').querySelectorAll('.dbtn').forEach(b2=>b2.onclick=()=>{if(b2.disabled)return;meta[b2.dataset.c]=b2.dataset.v;save();sfx.click();if(b2.dataset.c==='theme'&&G)buildGround();renderSkins()})}
 function hideAll(){for(const o of OVS)$(o).hidden=true}
 function runActive(){return!!(G&&!G.over)}
 function updateMenu(){
+ {const tg=$('titleTag'),a=meta.title&&meta.ach&&meta.ach[meta.title]?ACH.find(x=>x.id===meta.title):null;tg.hidden=!a;if(a)tg.textContent=a.name}
  $('mLv').textContent=meta.level;$('mBest').textContent=meta.best;$('mPr').textContent='★'+meta.prestige;$('mPts').textContent=meta.points;
  $('mXpLbl').textContent=`XP ${Math.floor(meta.xp)} / ${need(meta.level)}`;$('mXp').style.width=(meta.xp/need(meta.level)*100)+'%';
  $('soundBtn').textContent='Sound: '+(SND.on?'On':'Off');$('musicBtn').textContent='Music: '+(MUS.on?'On':'Off');$('statsBtn').hidden=!G;$('fxBtn').textContent='Effects: '+({full:'Full',reduced:'Reduced',minimal:'Minimal'}[meta.fx||'reduced']);$('labBtn').hidden=!(runActive()&&G.grid.some(q=>q.t==='L'));const a=runActive();$('resumeBtn').hidden=!a;$('quitBtn').hidden=!a;$('startBtn').hidden=a;
